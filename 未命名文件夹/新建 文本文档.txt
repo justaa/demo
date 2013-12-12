@@ -1,0 +1,267 @@
+window.frames[4].document.querySelectorAll("form>table.space")[3].querySelectorAll("table.space")[0].innerHTML
+window.frames[4].document.querySelectorAll("table.space")[3].querySelector("tr:nth-child(1)").innerText
+http://192.168.1.1/userRpm/StatusRpm.htm?Connect=%C1%AC%20%BD%D3&wan=1
+
+http://allrecipes.jp/recipes/%e9%ad%9a.aspx
+//
+//  com_pengleeViewController.m
+//  test
+//
+//  Created by lee on 13-6-20.
+//  Copyright (c) 2013 lee. All rights reserved.
+//
+
+#import "com_pengleeViewController.h"
+#import "ASIWebPageRequest.h"
+#import "NSMutableURLRequest+BasicAuth.h"
+@interface com_pengleeViewController ()
+
+@end
+
+@implementation com_pengleeViewController
+@synthesize authed = _authed;
+
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+	// Do any additional setup after loading the view, typically from a nib.
+    
+    [self loadDocument:@"resource.bundle/html/aspx.html"];
+    
+    
+}
+
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType;
+{
+    NSLog(@"Did start loading: %@ auth:%d", [[request URL] absoluteString], _authed);
+    
+    if (!_authed) {
+        _authed = NO;
+        /* pretty sure i'm leaking here, leave me alone... i just happen to leak sometimes */
+        [[NSURLConnection alloc] initWithRequest:request delegate:self];
+        return NO;
+    }
+    /*
+    
+    NSString *path = nil;
+    @try {
+        NSRange rang = [request.URL.relativeString rangeOfString:@"#" ];
+        path =[request.URL.relativeString substringFromIndex:rang.location];
+        //                NSLog(@"%@--------",path);
+    }
+    @catch (NSException *exception) {
+        
+    }
+    
+    
+    if([path hasPrefix:@"#str"]){
+        NSLog(@"---------");
+        //            [self.firstViewController gotoRootWithurl:request.URL.relativeString];
+        
+        //                [self requestUrl:request.URL.relativeString];
+        
+        
+        
+        NSString *result = [(NSString *)[path substringFromIndex:4] stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+        result = [result stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        
+        self.textView.text = result;
+        
+        return false;
+    }
+    */
+    
+    
+    return YES;
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge;
+{
+    NSLog(@"got auth challange");
+    
+    if ([challenge previousFailureCount] == 0) {
+        _authed = YES;
+        /* SET YOUR credentials, i'm just hard coding them in, tweak as necessary */
+        [[challenge sender] useCredential:[NSURLCredential credentialWithUser:@"admin" password:@"a123456" persistence:NSURLCredentialPersistencePermanent] forAuthenticationChallenge:challenge];
+    } else {
+        [[challenge sender] cancelAuthenticationChallenge:challenge];
+    }
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response;
+{
+    NSLog(@"received response via nsurlconnection");
+    
+    /** THIS IS WHERE YOU SET MAKE THE NEW REQUEST TO UIWebView, which will use the new saved auth info **/
+    
+    NSURLRequest *urlRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.1.1"]];
+    
+    [_webView loadRequest:urlRequest];
+}
+
+- (BOOL)connectionShouldUseCredentialStorage:(NSURLConnection *)connection;
+{
+    return NO;
+}
+- (void)loadDocument:(NSString*)docName {
+    /*
+     NSBundle *bundle = [NSBundle mainBundle];
+     NSString *resPath = [bundle resourcePath];
+     NSString *filePath = [resPath stringByAppendingPathComponent:docName];
+     
+     NSURL *url = [NSURL fileURLWithPath:filePath];
+     NSURLRequest *request = [NSURLRequest requestWithURL:url];
+     
+     self.webView.scalesPageToFit = YES;
+     
+     [self.webView loadRequest:request];
+     */
+    
+//        NSURL *urlweb = [NSURL URLWithString:@"http://192.168.1.1" ];
+    
+    
+//        NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:urlweb];
+//        NSString *authString = [[[NSString stringWithFormat:@"%@:%@", @"admin", @"a123456"] dataUsingEncoding:NSUTF8StringEncoding] base64Encoding];
+    
+//        authString = [NSString stringWithFormat: @"Basic %@", authString];
+    
+//        [req setValue:authString forHTTPHeaderField:@"Authorization"];
+    
+    
+//    NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://192.168.1.1/userRpm/StatusRpm.htm" ]];
+    
+    //    [req addBasicAuth:@"admin" andPassword:@"a123456"]; // Username and password are NSString variables
+//        NSURLRequest *req = [NSURLRequest requestWithURL:urlweb];
+    
+    
+//        [self.webView loadRequest:req];
+//    return;
+    
+    
+//    NSURL *url = [NSURL URLWithString:@"http://192.168.1.1/userRpm/AssignedIpAddrListRpm.htm"];
+    NSURL *url = [NSURL URLWithString:@"http://192.168.1.1/userRpm/StatusRpm.htm"];
+    
+//    NSURL *url = [NSURL URLWithString:@"http://192.168.1.1/userRpm/StatusRpm.htm?Connect=%C1%AC%20%BD%D3&wan=1"];
+    
+    
+    ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:url];
+    [request setUsername:@"admin"];
+    [request setPassword:@"a123456"];
+    [request setDelegate:self];
+    
+    [request startAsynchronous];
+    NSLog(@"123");
+    
+}
+
+- (void)requestFinished:(ASIHTTPRequest *)request
+
+{
+    
+    // 
+    
+    NSString *responseString = [request responseString];
+    
+    // 
+    
+    NSData *responseData = [request responseData];
+//    NSLog(@"%@",responseString);
+    
+    @try {
+            
+        NSString *locStart = @"var wanPara = new Array(";
+        NSString *locEnd = @");";
+        
+        
+        NSRange range = [responseString rangeOfString:locStart];
+        
+         NSString *locStart1 = [responseString substringFromIndex:range.location+range.length+1];
+        
+        NSRange range2 = [locStart1  rangeOfString:locEnd];
+        
+        
+        NSString *locStart2 = [locStart1 substringToIndex:range2.location];
+        
+        
+        NSArray *array = [locStart2 componentsSeparatedByString:@","];
+        
+        for (NSString *str in array) {
+            str = [str stringByTrimmingCharactersInSet:
+                       [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        }
+        NSLog(@"%@\n",[array objectAtIndex:7]);
+    }
+    @catch (NSException *exception) {
+        
+    }
+    @finally {
+        
+    }
+    
+    
+    @try {
+        
+        NSString *locStart = @"var DHCPDynList = new Array(";
+        NSString *locEnd = @");";
+        
+        
+        NSRange range = [responseString rangeOfString:locStart];
+        
+        NSString *locStart1 = [responseString substringFromIndex:range.location+range.length+1];
+        
+        NSRange range2 = [locStart1  rangeOfString:locEnd];
+        
+        
+        NSString *locStart2 = [locStart1 substringToIndex:range2.location];
+        
+        NSLog(@"%@",[locStart2 componentsSeparatedByString:@"\n"]);
+    }
+    @catch (NSException *exception) {
+        
+    }
+    @finally {
+        
+    }
+    
+}
+
+- (void)requestFailed:(ASIHTTPRequest *)request
+
+{
+    
+    NSError *error = [request error];
+    NSLog(@"456");
+}
+
+- (IBAction)BtnClick:(id)sender {
+    //document.querySelectorAll("frames")
+    //    self.textView.text =
+    
+    
+    //NSString *jsstr =@"alert(window.frames[4].document.querySelectorAll(\"form>table.space\")[3].innerHTML);";
+    
+    NSString *jsstr =@"window.location.href='#str'+encodeURI(window.frames[4].document.querySelectorAll(\"form>table.space\")[3].querySelectorAll(\"table.space\")[0].innerHTML)";
+    
+    [self.webView stringByEvaluatingJavaScriptFromString: jsstr];
+}
+
+
+- (void)didReceiveMemoryWarning
+{
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+- (void)dealloc {
+    [_webView release];
+    [_textView release];
+    
+    [super dealloc];
+}
+- (void)viewDidUnload {
+    [self setWebView:nil];
+    [self setTextView:nil];
+    
+    [super viewDidUnload];
+}
+@end
